@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Administrador {
+  cedulaAdm    Int      @id @map("cedula_adm")
+  nombres      String   @db.VarChar(255)
+  apellidos    String   @db.VarChar(255)
+  direccion    String   @db.VarChar(255)
+  municipio    String   @db.VarChar(255)
+  departamento String   @db.VarChar(255)
+  email        String   @unique @db.VarChar(255)
+  telefono     String   @db.VarChar(255)
+  contrasena   String   @db.VarChar(255)
+  estado       Int
+  eventos      Evento[] @relation("AdminEventos")
+
+  @@map("administrador")
+}
+
+model Cliente {
+  cedula       Int      @id
+  nombres      String   @db.VarChar(255)
+  apellidos    String   @db.VarChar(255)
+  direccion    String   @db.VarChar(255)
+  departamento String   @db.VarChar(255)
+  municipio    String   @db.VarChar(255)
+  email        String   @unique @db.VarChar(255)
+  telefono     String   @db.VarChar(255)
+  contrasena   String   @db.VarChar(255)
+  estado       Int
+  compras      Compra[]
+
+  @@map("cliente")
+}
+
+model Evento {
+  idEvento       Int           @id @default(autoincrement()) @map("id_evento")
+  nombre         String        @db.VarChar(255)
+  descripcion    String
+  fotoPrincipal  String        @map("foto_principal") @db.VarChar(255)
+  fotoSecundaria String        @map("foto_secundaria") @db.VarChar(255)
+  cedulaAdm      Int           @map("cedula_adm")
+  estado         Int
+  administrador  Administrador @relation("AdminEventos", fields: [cedulaAdm], references: [cedulaAdm], onDelete: Cascade, onUpdate: NoAction)
+  funciones      Funcion[]
+
+  @@map("evento")
+}
+
+model Ubicacion {
+  idUbicacion     Int       @id @default(autoincrement()) @map("id_ubicacion")
+  nombre          String    @db.VarChar(255)
+  personaContacto String    @map("persona_contacto") @db.VarChar(255)
+  telefono        String    @db.VarChar(255)
+  direccion       String    @db.VarChar(255)
+  municipio       String    @db.VarChar(255)
+  departamento    String    @db.VarChar(255)
+  email           String    @db.VarChar(255)
+  estado          Int
+  funciones       Funcion[]
+
+  @@map("ubicacion")
+}
+
+model Funcion {
+  idFuncion   Int          @id @default(autoincrement()) @map("id_funcion")
+  nombre      String       @db.VarChar(255)
+  descripcion String
+  fecha       DateTime     @db.Date
+  horaInicio  DateTime     @map("hora_inicio") @db.Time(6)
+  idEvento    Int          @map("id_evento")
+  idUbicacion Int          @map("id_ubicacion")
+  estado      Int
+  evento      Evento       @relation(fields: [idEvento], references: [idEvento], onDelete: Cascade, onUpdate: NoAction)
+  ubicacion   Ubicacion    @relation(fields: [idUbicacion], references: [idUbicacion], onDelete: Cascade, onUpdate: NoAction)
+  tipoBoletas TipoBoleta[]
+
+  @@index([idEvento], map: "idx_funcion_evento")
+  @@index([idUbicacion], map: "idx_funcion_ubicacion")
+  @@map("funcion")
+}
+
+model TipoBoleta {
+  idTipoBoleta Int      @id @default(autoincrement()) @map("id_tipoboleta")
+  nombre       String   @db.VarChar(255)
+  localizacion String   @db.VarChar(255)
+  precio       Int
+  cupoMaximo   Int      @map("cupo_maximo")
+  disponibles  Int
+  idFuncion    Int      @map("id_funcion")
+  compras      Compra[]
+  funcion      Funcion  @relation(fields: [idFuncion], references: [idFuncion], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([idFuncion], map: "idx_tipoboleta_funcion")
+  @@map("tipoboleta")
+}
+
+model Compra {
+  idCompra     Int        @id @default(autoincrement()) @map("idcompra")
+  fecha        DateTime   @default(now()) @db.Timestamp(6)
+  cantidad     Int
+  formaPago    String     @map("forma_pago") @db.VarChar(255)
+  cedula       Int
+  idTipoBoleta Int        @map("id_tipoboleta")
+  estado       Int
+  cliente      Cliente    @relation(fields: [cedula], references: [cedula], onDelete: Cascade, onUpdate: NoAction)
+  tipoBoleta   TipoBoleta @relation(fields: [idTipoBoleta], references: [idTipoBoleta], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([idTipoBoleta], map: "idx_compra_boleta")
+  @@index([cedula], map: "idx_compra_cliente")
+  @@map("compra")
+}
